@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from core.models.base import TourModel
 
 
+# @require_GET
 def tour_listing(request):
     qs = (
         TourModel.objects.all()
@@ -20,13 +21,12 @@ def tour_listing(request):
 
     tours = []
     for t in qs:
-        # ManyToMany text lists
         highlights = [h.text for h in t.highlights.all()]
         included = [i.text for i in t.included.all()]
         excluded = [e.text for e in t.excluded.all()]
         what_to_know = [w.text for w in t.what_to_know.all()]
         what_to_bring = [b.text for b in t.what_to_bring.all()]
-        # Thumbnail (OneToOne)
+
         thumbnail = None
         if hasattr(t, "tour_thumbnail") and t.tour_thumbnail is not None:
             thumb = t.tour_thumbnail
