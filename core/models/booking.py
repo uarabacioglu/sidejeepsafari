@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
-from django.conf import settings
 from core.models.base import TourModel
+from core.models.periods import PeriodModel
 
 
 class BookingModel(models.Model):
@@ -34,10 +34,19 @@ class BookingModel(models.Model):
 
     tour = models.ForeignKey(
         to=TourModel,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="tourbookings",
         null=False,
         blank=False,
+    )
+
+    period = models.ForeignKey(
+        to=PeriodModel,
+        on_delete=models.PROTECT,
+        related_name="periodbookings",
+        null=False,
+        blank=False,
+        default=None,
     )
 
     tour_date = models.DateField(
@@ -93,6 +102,25 @@ class BookingModel(models.Model):
         default="",
     )
 
+    # formdan gelen verilere göre snapshot
+
+    adult_price = models.PositiveSmallIntegerField(
+        blank=False,
+        null=False,
+        default=0,
+    )
+
+    child_price = models.PositiveSmallIntegerField(
+        blank=True,
+        null=True,
+        default=0,
+    )
+
+    discount_rate = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+    )
+
     total_cost = models.DecimalField(
         max_digits=6, decimal_places=2, blank=False, null=False
     )
@@ -115,13 +143,3 @@ class BookingModel(models.Model):
 
     def __str__(self):
         return str(self.booking_id)
-
-    # def final_payment(self, period):
-    #     if period.discount_rate:
-    #         return (self.adults * period.adult_price) + (
-    #             self.children * period.child_price
-    #         ) / 100 * (100 - period.discount_rate)
-    #     else:
-    #         return (self.adults * period.adult_price) + (
-    #             self.children * period.child_price
-    #         )

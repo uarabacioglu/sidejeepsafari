@@ -163,6 +163,20 @@ class TourModel(models.Model):
         null=False,
     )
 
+    review_count = models.PositiveIntegerField(
+        default=0,
+        blank=False,
+        null=False,
+    )
+
+    review_rate = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0.0,
+        blank=False,
+        null=False,
+    )
+
     date_added = models.DateTimeField(auto_now_add=False)
     date_edited = models.DateTimeField(auto_now=True)
 

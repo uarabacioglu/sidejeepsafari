@@ -1,8 +1,9 @@
 from django.shortcuts import redirect
+from django.views.decorators.http import require_POST
 from core.models.booking import BookingModel
 
 
-# @required_POST
+@require_POST
 def create_booking(request):
     if request.method == "POST":
         tour = request.POST.get("tour")

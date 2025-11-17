@@ -1,100 +1,59 @@
 from django.http import JsonResponse
+from django.views.decorators.http import require_GET
 from core.models.base import TourModel
 
 
-# @require_GET
+@require_GET
 def tour_listing(request):
-    qs = (
-        TourModel.objects.all()
-        .filter(is_active=True)
-        .select_related()
-        .prefetch_related(
-            "tour_images",
-            "tour_periods",
-            "highlights",
-            "included",
-            "excluded",
-            "what_to_know",
-            "what_to_bring",
-        )
+
+    tours = (
+        TourModel.objects.filter(is_active=True)
+        .select_related("tour_thumbnail")
+        .prefetch_related("tour_periods")
     )
 
-    tours = []
-    for t in qs:
-        highlights = [h.text for h in t.highlights.all()]
-        included = [i.text for i in t.included.all()]
-        excluded = [e.text for e in t.excluded.all()]
-        what_to_know = [w.text for w in t.what_to_know.all()]
-        what_to_bring = [b.text for b in t.what_to_bring.all()]
+    tours_data = []
 
-        thumbnail = None
-        if hasattr(t, "tour_thumbnail") and t.tour_thumbnail is not None:
-            thumb = t.tour_thumbnail
-            thumbnail = {
-                "image_id": str(thumb.image_id),
-                "image_url": thumb.image.url if getattr(thumb, "image", None) else None,
-                "alt_text": thumb.alt_text,
+    for tour in tours:
+
+        thumbnail_obj = getattr(tour, "tour_thumbnail", None)
+
+        thumbnail_data = None
+
+        if thumbnail_obj and thumbnail_obj.image:
+            thumbnail_data = {
+                "image": request.build_absolute_uri(thumbnail_obj.image.url),
+                "alt_text": thumbnail_obj.alt_text,
             }
 
-        # Images (FK reverse)
-        images = [
-            {
-                "image_id": str(img.image_id),
-                "image_url": img.image.url if getattr(img, "image", None) else None,
-                "alt_text": img.alt_text,
-            }
-            for img in t.tour_images.all()
-        ]
+        min_adult_price = None
 
-        # Periods (FK reverse)
-        periods = [
-            {
-                "period_id": str(p.period_id),
-                "title": p.title,
-                "start_date": p.start_date.isoformat() if p.start_date else None,
-                "end_date": p.end_date.isoformat() if p.end_date else None,
-                "adult_price": (
-                    str(p.adult_price)
-                    if getattr(p, "adult_price", None) is not None
-                    else None
-                ),
-                "child_price": (
-                    str(p.child_price)
-                    if getattr(p, "child_price", None) is not None
-                    else None
-                ),
-                "is_active": p.is_active,
-            }
-            for p in t.tour_periods.all()
-        ]
+        periods = tour.tour_periods.all()
 
-        tours.append(
+        if periods.exists():
+            prices = [
+                pricing.adult_price
+                for pricing in periods
+                if hasattr(pricing, "adult_price") and pricing.adult_price is not None
+            ]
+            if prices:
+                min_adult_price = min(prices)
+
+        tours_data.append(
             {
-                "tour_id": str(t.tour_id),
-                "title": t.title,
-                "slug": t.slug,
-                "short_description": t.short_description,
-                "full_description": t.full_description,
-                "highlights": highlights,
-                "included": included,
-                "excluded": excluded,
-                "what_to_know": what_to_know,
-                "what_to_bring": what_to_bring,
-                "duration": t.duration,
-                "pickup_description": t.pickup_description,
-                "thumbnail": thumbnail,
-                "images": images,
-                "periods": periods,
-                "date_added": (
-                    t.date_added.isoformat() if getattr(t, "date_added", None) else None
-                ),
-                "date_edited": (
-                    t.date_edited.isoformat()
-                    if getattr(t, "date_edited", None)
-                    else None
-                ),
-                "is_active": t.is_active,
+                "tour_id": str(tour.tour_id),
+                "title": tour.title,
+                "slug": tour.slug,
+                "short_description": tour.short_description,
+                "thumbnail": thumbnail_data,
+                "min_adult_price": min_adult_price,
+                "review_count": str(tour.review_count),
+                "average_rating": str(tour.review_rate),
             }
         )
 
-    return JsonResponse({"tours": tours})
+    return JsonResponse(
+        data=tours_data,
+        safe=False,
+        json_dumps_params={"ensure_ascii": False},
+    )

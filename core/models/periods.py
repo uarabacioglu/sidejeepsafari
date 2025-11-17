@@ -71,20 +71,16 @@ class PeriodModel(models.Model):
         blank=True,
     )
 
-    adult_price = models.DecimalField(
-        max_digits=6,
-        decimal_places=2,
+    adult_price = models.PositiveSmallIntegerField(
         blank=False,
         null=False,
-        default=0.0,
+        default=0,
     )
 
-    child_price = models.DecimalField(
-        max_digits=6,
-        decimal_places=2,
+    child_price = models.PositiveSmallIntegerField(
         blank=False,
         null=False,
-        default=0.0,
+        default=0,
     )
 
     discount_rate = models.PositiveIntegerField(
@@ -109,4 +105,10 @@ class PeriodModel(models.Model):
         verbose_name_plural = "Periods"
 
     def __str__(self):
-        return f"{self.tour.title}-{self.title}"
+        return f"Starts: {self.start_date} / Ends: {self.end_date}"
+
+    def get_enabled_days_list(self):
+        return [day.name for day in self.enabled_days.all()]
+
+    def get_pickup_times_list(self):
+        return [time.time for time in self.pick_up_times.all()]
