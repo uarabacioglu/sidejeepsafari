@@ -105,7 +105,7 @@ class PeriodModel(models.Model):
         verbose_name_plural = "Periods"
 
     def __str__(self):
-        return f"Starts: {self.start_date} / Ends: {self.end_date}"
+        return f"Tour: {self.tour.title}: Period {self.period_id}"
 
     def get_enabled_days_list(self):
         return [day.name for day in self.enabled_days.all()]

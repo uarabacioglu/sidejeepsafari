@@ -7,5 +7,5 @@ from core.views.tour_detail import tour_detail
 urlpatterns = [
     path("tours/", tour_listing, name="tour_listing"),
     path("tours/<slug:slug>/", tour_detail, name="tour_detail"),
-    path("booking-create/", create_booking, name="create_booking"),
+    path("tours/<slug:slug>/book/", create_booking, name="create_booking"),
 ]
