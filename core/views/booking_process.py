@@ -55,7 +55,13 @@ def create_booking(request, slug):
     hotel_name = payload.get("hotel_name")
     message = payload.get("message", "")
 
-    selected_curreny = payload.get("selected_curreny", "EUR")
+    # Currency (accept legacy field name, default EUR)
+    selected_currency_raw = (
+        payload.get("currency")
+        or payload.get("selected_currency")
+        or payload.get("selected_curreny")
+        or "EUR"
+    )
 
     # --- Zorunlu alan kontrolü ---
     required_fields = {
@@ -103,6 +109,18 @@ def create_booking(request, slug):
     except (TypeError, ValueError):
         response = JsonResponse(
             {"detail": "children must be a non-negative integer."},
+            status=400,
+        )
+        return add_cors_headers(response)
+
+    # --- Currency normalize & validation (EUR only) ---
+    normalized_currency = (
+        str(selected_currency_raw).strip().upper() if selected_currency_raw else "EUR"
+    )
+    allowed_currencies = {"EUR"}
+    if normalized_currency not in allowed_currencies:
+        response = JsonResponse(
+            {"detail": "Unsupported currency. Allowed currency: EUR."},
             status=400,
         )
         return add_cors_headers(response)
@@ -265,7 +283,7 @@ def create_booking(request, slug):
         child_price=child_price if children > 0 else None,
         discount_rate=discount_rate,
         total_cost=total_cost,
-        selected_curreny=selected_curreny,
+        selected_curreny=normalized_currency,
     )
 
     response = JsonResponse(
