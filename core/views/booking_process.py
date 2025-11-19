@@ -1,8 +1,8 @@
 # core/views/booking_process.py (sen nereye koyduysan)
 
 import json
+from datetime import datetime
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
@@ -26,12 +26,12 @@ def create_booking(request, slug):
     if request.method == "OPTIONS":
         response = JsonResponse({})
         return add_cors_headers(response)
-    
+
     # Only allow POST for actual booking
     if request.method != "POST":
         response = JsonResponse({"detail": "Method not allowed."}, status=405)
         return add_cors_headers(response)
-    
+
     # --- JSON body parse ---
     try:
         payload = json.loads(request.body.decode("utf-8"))
@@ -45,7 +45,7 @@ def create_booking(request, slug):
     # --- Body'den field'lar ---
     period_id = payload.get("period_id")
     tour_date_str = payload.get("tour_date")
-    pick_up_time = payload.get("pick_up_time")
+    pick_up_time_raw = payload.get("pick_up_time")
 
     full_name = payload.get("full_name")
     email = payload.get("email")
@@ -61,7 +61,7 @@ def create_booking(request, slug):
     required_fields = {
         "period_id": period_id,
         "tour_date": tour_date_str,
-        "pick_up_time": pick_up_time,
+        "pick_up_time": pick_up_time_raw,
         "full_name": full_name,
         "email": email,
         "phone": phone,
@@ -107,6 +107,67 @@ def create_booking(request, slug):
         )
         return add_cors_headers(response)
 
+    # --- Pickup time normalize & format check (HH:MM) ---
+    pick_up_time = (
+        pick_up_time_raw.strip() if isinstance(pick_up_time_raw, str) else None
+    )
+    try:
+        normalized_pick_up_time = datetime.strptime(pick_up_time, "%H:%M").strftime(
+            "%H:%M"
+        )
+    except (TypeError, ValueError):
+        response = JsonResponse(
+            {"detail": "pick_up_time must be in HH:MM (24h) format."},
+            status=400,
+        )
+        return add_cors_headers(response)
+
+    # --- Katılımcı sınırları ---
+    total_participants = adults + children
+
+    if (
+        total_participants < tour.min_participant_for_a_booking
+        or total_participants > tour.max_participants_for_a_booking
+    ):
+        response = JsonResponse(
+            {
+                "detail": (
+                    "Total participants out of allowed range "
+                    f"{tour.min_participant_for_a_booking}-{tour.max_participants_for_a_booking}."
+                )
+            },
+            status=400,
+        )
+        return add_cors_headers(response)
+
+    if adults < tour.adult_min_participant or adults > tour.adult_max_participant:
+        response = JsonResponse(
+            {
+                "detail": (
+                    "Adults count out of allowed range "
+                    f"{tour.adult_min_participant}-{tour.adult_max_participant}."
+                )
+            },
+            status=400,
+        )
+        return add_cors_headers(response)
+
+    child_min = (
+        tour.child_min_participant if tour.child_min_participant is not None else 0
+    )
+    child_max = tour.child_max_participant
+    if children < child_min or (child_max is not None and children > child_max):
+        response = JsonResponse(
+            {
+                "detail": (
+                    "Children count out of allowed range "
+                    f"{child_min}-{child_max if child_max is not None else '∞'}."
+                )
+            },
+            status=400,
+        )
+        return add_cors_headers(response)
+
     # --- Period doğrulama ---
     period = PeriodModel.objects.filter(
         period_id=period_id, tour=tour, is_active=True
@@ -128,9 +189,43 @@ def create_booking(request, slug):
         )
         return add_cors_headers(response)
 
-    # --- Pickup time doğrulama (BURASI DÜZELTİLDİ) ---
-    valid_pickup_times = [t.time for t in period.pick_up_times.all()]
-    if pick_up_time not in valid_pickup_times:
+    # Gün uygunluk kontrolü
+    enabled_day_numbers = list(period.enabled_days.values_list("number", flat=True))
+    if enabled_day_numbers:
+        weekday_number = tour_date.weekday()  # Monday=0
+        weekday_iso = weekday_number + 1  # ISO 1-7
+        if (
+            weekday_number not in enabled_day_numbers
+            and weekday_iso not in enabled_day_numbers
+        ):
+            response = JsonResponse(
+                {
+                    "detail": "Selected tour_date is not allowed for this period.",
+                    "enabled_days": list(
+                        period.enabled_days.values_list("name", flat=True)
+                    ),
+                    "enabled_day_numbers": enabled_day_numbers,
+                },
+                status=400,
+            )
+            return add_cors_headers(response)
+
+    # --- Pickup time doğrulama (trim + normalize) ---
+    valid_pickup_times = []
+    for t in period.pick_up_times.all():
+        time_str = str(t.time).strip()
+        try:
+            valid_pickup_times.append(
+                datetime.strptime(time_str, "%H:%M").strftime("%H:%M")
+            )
+        except ValueError:
+            # fallback to raw string if misformatted in DB
+            valid_pickup_times.append(time_str)
+
+    if (
+        normalized_pick_up_time not in valid_pickup_times
+        and pick_up_time not in valid_pickup_times
+    ):
         response = JsonResponse(
             {
                 "detail": "Invalid pick_up_time for this period.",
@@ -158,7 +253,7 @@ def create_booking(request, slug):
         tour=tour,
         period=period,
         tour_date=tour_date,
-        pick_up_time=pick_up_time,
+        pick_up_time=normalized_pick_up_time,
         full_name=full_name,
         email=email,
         phone=phone,
