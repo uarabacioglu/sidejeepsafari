@@ -4,9 +4,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-5a%ja*rp_p%haoyd4ieummm2nk(m%lq+_7egju@tgdwa=($*8)"
 
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "https://seventours.eu.pythonanywhere.com/",
+    "seventours.eu.pythonanywhere.com",
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -125,10 +128,15 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+if DEBUG:
+    STATIC_ROOT = "static"
+
+STATIC_ROOT = "/home/SevenTours/sidejeepsafari/static"
+
 MEDIA_URL = "media/"
 
 if DEBUG:
-    MEDIA_ROOT = BASE_DIR / "media"
+    MEDIA_ROOT = "media"
 
 MEDIA_ROOT = "/home/SevenTours/sidejeepsafari/media"
 
