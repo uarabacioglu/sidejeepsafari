@@ -1,6 +1,5 @@
 __pycache__/
 venv/
-db.sqlite3
 *.mmdb
 *.log
 *.pot
@@ -9,5 +8,4 @@ db.sqlite3
 .env.dev
 .env.prod
 .vscode/
-media/
 frontend/

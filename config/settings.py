@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "corsheaders",
     "django.contrib.staticfiles",
     "core",
 ]
@@ -21,12 +22,57 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "https://sidejeepsafari.com",
+    "https://www.sidejeepsafari.com",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://sidejeepsafari.com",
+    "https://www.sidejeepsafari.com",
+]
+
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "OPTIONS",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+if DEBUG:
+    CORS_ALLOWED_ORIGINS += [
+        "http://localhost:4321",
+        "http://127.0.0.1:4321",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+    CSRF_TRUSTED_ORIGINS += [
+        "http://localhost:4321",
+        "http://127.0.0.1:4321",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+
+# Eğer ileride cookie/tabanlı login (session) kullanırsan bunu True yapman gerekecek
+# CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = "config.urls"
 
@@ -81,6 +127,9 @@ STATIC_URL = "static/"
 
 MEDIA_URL = "media/"
 
-MEDIA_ROOT = BASE_DIR / "media"
+if DEBUG:
+    MEDIA_ROOT = BASE_DIR / "media"
+
+MEDIA_ROOT = "/home/SevenTours/sidejeepsafari/media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
