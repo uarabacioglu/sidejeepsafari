@@ -4,12 +4,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-5a%ja*rp_p%haoyd4ieummm2nk(m%lq+_7egju@tgdwa=($*8)"
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     "https://seventours.eu.pythonanywhere.com/",
     "seventours.eu.pythonanywhere.com",
 ]
+
+if DEBUG:
+    ALLOWED_HOSTS += "*"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -66,12 +69,16 @@ if DEBUG:
         "http://127.0.0.1:4321",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1",
     ]
     CSRF_TRUSTED_ORIGINS += [
         "http://localhost:4321",
         "http://127.0.0.1:4321",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1",
     ]
 
 # Eğer ileride cookie/tabanlı login (session) kullanırsan bunu True yapman gerekecek
@@ -137,7 +144,7 @@ MEDIA_URL = "media/"
 
 if DEBUG:
     MEDIA_ROOT = "media"
-
-MEDIA_ROOT = "/home/SevenTours/sidejeepsafari/media"
+if not DEBUG:
+    MEDIA_ROOT = "/home/SevenTours/sidejeepsafari/media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
