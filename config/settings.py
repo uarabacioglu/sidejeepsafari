@@ -135,16 +135,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-if DEBUG:
-    STATIC_ROOT = "static"
-
-STATIC_ROOT = "/home/SevenTours/sidejeepsafari/static"
-
 MEDIA_URL = "media/"
 
 if DEBUG:
+    STATIC_ROOT = "static"
     MEDIA_ROOT = "media"
+
 if not DEBUG:
+    STATIC_ROOT = "/home/SevenTours/sidejeepsafari/static"
     MEDIA_ROOT = "/home/SevenTours/sidejeepsafari/media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
